@@ -1,3 +1,5 @@
+import { normaliseLetterboxdRating } from './csvParser';
+
 // Map raw CSV rows to a common shape regardless of which service they came from.
 export function normalizeData(rows, source) {
   if (source === 'letterboxd') return normalizeLetterboxd(rows);
@@ -11,7 +13,7 @@ function normalizeLetterboxd(rows) {
     .map((r) => ({
       title: r['Name'] || r['Title'] || '',
       year: parseInt(r['Year']) || null,
-      rating: r['Rating'] ? parseFloat(r['Rating']) : null,
+      rating: normaliseLetterboxdRating(r['Rating']),
       watchedDate: r['Watched Date'] || r['Date'] || null,
       rewatch: r['Rewatch'] === 'Yes',
       genres: [],
