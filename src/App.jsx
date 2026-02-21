@@ -9,9 +9,9 @@ export default function App() {
     <div className="dark">
       {watchData ? (
         <Dashboard
-          movies={watchData.movies}
           stats={watchData.stats}
           source={watchData.source}
+          onReset={() => setWatchData(null)}
         />
       ) : (
         <FileUpload onDataLoaded={setWatchData} />

@@ -11,13 +11,14 @@ function normalizeLetterboxd(rows) {
   return rows
     .filter((r) => r['Name'] || r['Title'])
     .map((r) => ({
-      title: r['Name'] || r['Title'] || '',
-      year: parseInt(r['Year']) || null,
-      rating: normaliseLetterboxdRating(r['Rating']),
+      title:       r['Name'] || r['Title'] || '',
+      year:        parseInt(r['Year']) || null,
+      rating:      normaliseLetterboxdRating(r['Rating']),
       watchedDate: r['Watched Date'] || r['Date'] || null,
-      rewatch: r['Rewatch'] === 'Yes',
-      genres: [],
-      source: 'letterboxd',
+      rewatch:     r['Rewatch'] === 'Yes',
+      genres:      [],
+      director:    null,
+      source:      'letterboxd',
     }));
 }
 
@@ -29,77 +30,147 @@ function normalizeIMDb(rows) {
         ? r['Genres'].split(',').map((g) => g.trim()).filter(Boolean)
         : [];
       return {
-        title: r['Title'] || r['Primary Title'] || '',
-        year: parseInt(r['Year']) || null,
-        rating: r['Your Rating'] ? parseFloat(r['Your Rating']) : null,
+        title:       r['Title'] || r['Primary Title'] || '',
+        year:        parseInt(r['Year']) || null,
+        rating:      r['Your Rating'] ? parseFloat(r['Your Rating']) : null,
         watchedDate: r['Date Rated'] || null,
-        rewatch: false,
+        rewatch:     false,
         genres,
-        source: 'imdb',
+        director:    r['Directors'] || null,
+        source:      'imdb',
       };
     });
 }
 
-// Crunch the normalised records into all the chart-ready stats the dashboard needs.
-export function computeStats(movies) {
+// Total count, estimated hours, average rating, and date range.
+export function calculateBasicStats(movies) {
+  const total = movies.length;
+  const estimatedHours = total * 2;
+
   const rated = movies.filter((m) => m.rating !== null);
-
-  // Ratings distribution (1-10, half-star for letterboxd 0.5 increments)
-  const ratingCounts = {};
-  rated.forEach((m) => {
-    const key = String(m.rating);
-    ratingCounts[key] = (ratingCounts[key] || 0) + 1;
-  });
-  const ratingsDistribution = Object.entries(ratingCounts)
-    .map(([rating, count]) => ({ rating: parseFloat(rating), count }))
-    .sort((a, b) => a.rating - b.rating);
-
-  // Movies per year
-  const yearCounts = {};
-  movies.forEach((m) => {
-    if (m.year) yearCounts[m.year] = (yearCounts[m.year] || 0) + 1;
-  });
-  const moviesPerYear = Object.entries(yearCounts)
-    .map(([year, count]) => ({ year: parseInt(year), count }))
-    .sort((a, b) => a.year - b.year);
-
-  // Watch activity over time (by month)
-  const monthCounts = {};
-  movies.forEach((m) => {
-    if (m.watchedDate) {
-      const month = m.watchedDate.slice(0, 7); // "YYYY-MM"
-      monthCounts[month] = (monthCounts[month] || 0) + 1;
-    }
-  });
-  const watchActivity = Object.entries(monthCounts)
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  // Genre breakdown. Only populated for IMDb exports since Letterboxd doesn't include genres.
-  const genreCounts = {};
-  movies.forEach((m) => {
-    m.genres.forEach((g) => {
-      genreCounts[g] = (genreCounts[g] || 0) + 1;
-    });
-  });
-  const genreBreakdown = Object.entries(genreCounts)
-    .map(([genre, count]) => ({ genre, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
-
   const avgRating =
     rated.length > 0
       ? Math.round((rated.reduce((s, m) => s + m.rating, 0) / rated.length) * 10) / 10
       : null;
 
+  const dated = movies
+    .filter((m) => m.watchedDate)
+    .map((m) => m.watchedDate)
+    .sort();
+
+  const firstWatch = dated[0] ?? null;
+  const lastWatch  = dated[dated.length - 1] ?? null;
+
+  return { total, estimatedHours, avgRating, ratedCount: rated.length, firstWatch, lastWatch };
+}
+
+// Count per genre, sorted by count descending.
+export function getGenreDistribution(movies) {
+  const counts = {};
+  movies.forEach((m) => {
+    m.genres.forEach((g) => {
+      counts[g] = (counts[g] || 0) + 1;
+    });
+  });
+  return Object.entries(counts)
+    .map(([genre, count]) => ({ genre, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Count and percentage per whole-star rating bucket (1-10).
+export function getRatingDistribution(movies) {
+  const rated = movies.filter((m) => m.rating !== null);
+  if (!rated.length) return [];
+
+  const counts = {};
+  rated.forEach((m) => {
+    // Round to nearest whole star for the bucket label
+    const bucket = Math.round(m.rating);
+    counts[bucket] = (counts[bucket] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([stars, count]) => ({
+      stars:      parseInt(stars),
+      count,
+      percentage: Math.round((count / rated.length) * 100),
+    }))
+    .sort((a, b) => a.stars - b.stars);
+}
+
+// Watch count grouped by YYYY-MM, sorted chronologically.
+export function getWatchTimeline(movies) {
+  const counts = {};
+  movies.forEach((m) => {
+    if (!m.watchedDate) return;
+    const month = m.watchedDate.slice(0, 7);
+    counts[month] = (counts[month] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+}
+
+// Top 10 directors by film count with their average rating. IMDb only.
+export function getTopDirectors(movies) {
+  const withDirector = movies.filter((m) => m.director);
+  if (!withDirector.length) return [];
+
+  const map = {};
+  withDirector.forEach((m) => {
+    // IMDb can list multiple directors separated by ", "
+    const names = m.director.split(',').map((n) => n.trim()).filter(Boolean);
+    names.forEach((name) => {
+      if (!map[name]) map[name] = { films: 0, ratingSum: 0, ratedCount: 0 };
+      map[name].films += 1;
+      if (m.rating !== null) {
+        map[name].ratingSum  += m.rating;
+        map[name].ratedCount += 1;
+      }
+    });
+  });
+
+  return Object.entries(map)
+    .map(([name, d]) => ({
+      name,
+      films:     d.films,
+      avgRating: d.ratedCount > 0
+        ? Math.round((d.ratingSum / d.ratedCount) * 10) / 10
+        : null,
+    }))
+    .sort((a, b) => b.films - a.films)
+    .slice(0, 10);
+}
+
+// Film count and percentage per release decade.
+export function getDecadeBreakdown(movies) {
+  const withYear = movies.filter((m) => m.year);
+  if (!withYear.length) return [];
+
+  const counts = {};
+  withYear.forEach((m) => {
+    const decade = Math.floor(m.year / 10) * 10;
+    counts[decade] = (counts[decade] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([decade, count]) => ({
+      decade:     parseInt(decade),
+      label:      `${decade}s`,
+      count,
+      percentage: Math.round((count / withYear.length) * 100),
+    }))
+    .sort((a, b) => a.decade - b.decade);
+}
+
+// Convenience wrapper — returns everything the Dashboard needs in one call.
+export function computeStats(movies) {
   return {
-    total: movies.length,
-    rated: rated.length,
-    avgRating,
-    rewatches: movies.filter((m) => m.rewatch).length,
-    ratingsDistribution,
-    moviesPerYear,
-    watchActivity,
-    genreBreakdown,
+    basic:     calculateBasicStats(movies),
+    genres:    getGenreDistribution(movies),
+    ratings:   getRatingDistribution(movies),
+    timeline:  getWatchTimeline(movies),
+    directors: getTopDirectors(movies),
+    decades:   getDecadeBreakdown(movies),
   };
 }
