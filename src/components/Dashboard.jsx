@@ -64,13 +64,27 @@ export default function Dashboard({ stats, source, onReset }) {
       {/* Watch timeline */}
       {timeline.length > 0 && (
         <Section title="Watch timeline">
-          {timeline.map((t) => (
-            <StatRow
-              key={t.month}
-              label={formatMonth(t.month)}
-              value={`${t.count} film${t.count !== 1 ? 's' : ''}`}
-            />
-          ))}
+          {fillGaps(timeline).map((t) =>
+            t.isGap ? (
+              <div
+                key={`gap-${t.start}`}
+                className="flex justify-between items-center py-2.5 border-b border-gray-800 last:border-0"
+              >
+                <span className="text-gray-500 text-sm">
+                  {t.start === t.end
+                    ? formatMonth(t.start)
+                    : `${formatMonth(t.start)} - ${formatMonth(t.end)}`}
+                </span>
+                <span className="text-gray-500 text-sm">0 films</span>
+              </div>
+            ) : (
+              <StatRow
+                key={t.month}
+                label={formatMonth(t.month)}
+                value={`${t.count} film${t.count !== 1 ? 's' : ''}`}
+              />
+            )
+          )}
         </Section>
       )}
 
@@ -118,6 +132,37 @@ export default function Dashboard({ stats, source, onReset }) {
 
     </div>
   );
+}
+
+// Insert gap rows between timeline entries where months were skipped.
+function fillGaps(timeline) {
+  if (timeline.length < 2) return timeline;
+  const result = [];
+  for (let i = 0; i < timeline.length; i++) {
+    result.push(timeline[i]);
+    if (i < timeline.length - 1) {
+      const gap = monthsBetween(timeline[i].month, timeline[i + 1].month);
+      if (gap.length > 0) {
+        result.push({ isGap: true, start: gap[0], end: gap[gap.length - 1], count: 0 });
+      }
+    }
+  }
+  return result;
+}
+
+// All months strictly between two "YYYY-MM" strings (exclusive of both ends).
+function monthsBetween(start, end) {
+  const months = [];
+  let [y, m] = start.split('-').map(Number);
+  const [ey, em] = end.split('-').map(Number);
+  m++;
+  if (m > 12) { y++; m = 1; }
+  while (y < ey || (y === ey && m < em)) {
+    months.push(`${y}-${String(m).padStart(2, '0')}`);
+    m++;
+    if (m > 12) { y++; m = 1; }
+  }
+  return months;
 }
 
 // "2023-09-23" -> "September 23rd 2023"
