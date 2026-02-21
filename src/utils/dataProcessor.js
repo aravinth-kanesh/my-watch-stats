@@ -48,7 +48,7 @@ export function calculateBasicStats(movies) {
   const rated = movies.filter((m) => m.rating !== null);
   const avgRating =
     rated.length > 0
-      ? Math.round((rated.reduce((s, m) => s + m.rating, 0) / rated.length) * 10) / 10
+      ? Math.round((rated.reduce((s, m) => s + m.rating, 0) / rated.length) * 100) / 100
       : null;
 
   const dated = movies
@@ -93,7 +93,7 @@ export function getRatingDistribution(movies) {
 
   return Object.entries(counts)
     .map(([stars, count]) => ({
-      stars:      parseInt(stars),
+      stars:      parseFloat(stars),
       count,
       percentage: Math.round((count / rated.length) * 100),
     }))

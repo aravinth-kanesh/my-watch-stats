@@ -1,5 +1,6 @@
 export default function Dashboard({ stats, source, onReset }) {
   const { basic, genres, ratings, timeline, directors, decades } = stats;
+  const isLetterboxd = source === 'letterboxd';
 
   return (
     <div className="min-h-screen px-4 py-10 max-w-3xl mx-auto">
@@ -29,9 +30,12 @@ export default function Dashboard({ stats, source, onReset }) {
         {basic.ratedCount < basic.total && (
           <StatRow label="Films rated" value={`${basic.ratedCount} / ${basic.total}`} />
         )}
-        <StatRow label="Average rating"  value={basic.avgRating ?? 'n/a'} />
+        <StatRow label="Average rating" value={basic.avgRating ?? 'n/a'} />
         {basic.firstWatch && (
-          <StatRow label="Date range" value={`${basic.firstWatch} to ${basic.lastWatch}`} />
+          <StatRow
+            label="Date range"
+            value={`${formatFullDate(basic.firstWatch)} - ${formatFullDate(basic.lastWatch)}`}
+          />
         )}
       </Section>
 
@@ -40,7 +44,9 @@ export default function Dashboard({ stats, source, onReset }) {
         <Section title="Ratings breakdown">
           {ratings.map((r) => (
             <div key={r.stars} className="flex items-center gap-3 py-1.5">
-              <span className="text-gray-400 w-16 text-sm flex-shrink-0">{r.stars} stars</span>
+              <span className="text-orange-400 w-28 text-sm flex-shrink-0 tracking-tight">
+                {isLetterboxd ? toStars(r.stars) : `${r.stars} stars`}
+              </span>
               <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
                 <div
                   className="h-2 rounded-full bg-orange-400"
@@ -59,7 +65,11 @@ export default function Dashboard({ stats, source, onReset }) {
       {timeline.length > 0 && (
         <Section title="Watch timeline">
           {timeline.map((t) => (
-            <StatRow key={t.month} label={t.month} value={`${t.count} film${t.count !== 1 ? 's' : ''}`} />
+            <StatRow
+              key={t.month}
+              label={formatMonth(t.month)}
+              value={`${t.count} film${t.count !== 1 ? 's' : ''}`}
+            />
           ))}
         </Section>
       )}
@@ -108,6 +118,34 @@ export default function Dashboard({ stats, source, onReset }) {
 
     </div>
   );
+}
+
+// "2023-09-23" -> "September 23rd 2023"
+function formatFullDate(str) {
+  const [year, month, day] = str.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const monthName = date.toLocaleString('en-GB', { month: 'long' });
+  return `${monthName} ${ordinal(day)} ${year}`;
+}
+
+// "2023-09" -> "September 2023"
+function formatMonth(str) {
+  const [year, month] = str.split('-').map(Number);
+  const date = new Date(year, month - 1);
+  return date.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// 3.5 -> "★★★½", 5 -> "★★★★★", 0.5 -> "½"
+function toStars(rating) {
+  const full = Math.floor(rating);
+  const half = (rating % 1) >= 0.5;
+  return '★'.repeat(full) + (half ? '½' : '');
 }
 
 function Section({ title, children }) {
