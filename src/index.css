@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #f97316;
+  --color-brand-light: #fb923c;
+}
+
+body {
+  @apply bg-gray-950 text-gray-100 min-h-screen;
+}
