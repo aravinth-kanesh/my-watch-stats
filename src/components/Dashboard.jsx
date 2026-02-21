@@ -24,10 +24,12 @@ export default function Dashboard({ stats, source, onReset }) {
 
       {/* Basic stats */}
       <Section title="Overview">
-        <StatRow label="Total films"       value={basic.total} />
-        <StatRow label="Estimated hours"   value={`${basic.estimatedHours.toLocaleString()} hrs`} />
-        <StatRow label="Films rated"       value={`${basic.ratedCount} / ${basic.total}`} />
-        <StatRow label="Average rating"    value={basic.avgRating ?? 'n/a'} />
+        <StatRow label="Total films"     value={basic.total} />
+        <StatRow label="Estimated hours" value={`${basic.estimatedHours.toLocaleString()} hrs`} />
+        {basic.ratedCount < basic.total && (
+          <StatRow label="Films rated" value={`${basic.ratedCount} / ${basic.total}`} />
+        )}
+        <StatRow label="Average rating"  value={basic.avgRating ?? 'n/a'} />
         {basic.firstWatch && (
           <StatRow label="Date range" value={`${basic.firstWatch} to ${basic.lastWatch}`} />
         )}

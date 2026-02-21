@@ -1,5 +1,3 @@
-import { normaliseLetterboxdRating } from './csvParser';
-
 // Map raw CSV rows to a common shape regardless of which service they came from.
 export function normalizeData(rows, source) {
   if (source === 'letterboxd') return normalizeLetterboxd(rows);
@@ -13,7 +11,7 @@ function normalizeLetterboxd(rows) {
     .map((r) => ({
       title:       r['Name'] || r['Title'] || '',
       year:        parseInt(r['Year']) || null,
-      rating:      normaliseLetterboxdRating(r['Rating']),
+      rating:      r['Rating'] ? parseFloat(r['Rating']) : null,
       watchedDate: r['Watched Date'] || r['Date'] || null,
       rewatch:     r['Rewatch'] === 'Yes',
       genres:      [],
@@ -77,15 +75,19 @@ export function getGenreDistribution(movies) {
     .sort((a, b) => b.count - a.count);
 }
 
-// Count and percentage per whole-star rating bucket (1-10).
+// Count and percentage per rating bucket.
+// Letterboxd buckets by 0.5 (native scale), IMDb by whole number.
 export function getRatingDistribution(movies) {
   const rated = movies.filter((m) => m.rating !== null);
   if (!rated.length) return [];
 
+  const isLetterboxd = rated[0]?.source === 'letterboxd';
+
   const counts = {};
   rated.forEach((m) => {
-    // Round to nearest whole star for the bucket label
-    const bucket = Math.round(m.rating);
+    const bucket = isLetterboxd
+      ? Math.round(m.rating * 2) / 2   // snap to nearest 0.5
+      : Math.round(m.rating);           // snap to nearest whole number
     counts[bucket] = (counts[bucket] || 0) + 1;
   });
 

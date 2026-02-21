@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 
 const REQUIRED_COLUMNS = {
-  letterboxd: ['Name', 'Year', 'Rating', 'Watched Date'],
+  letterboxd: ['Name', 'Year', 'Rating'],
   imdb:       ['Title', 'Year', 'Your Rating', 'Date Rated', 'Genres'],
 };
 
