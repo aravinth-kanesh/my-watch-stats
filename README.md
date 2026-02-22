@@ -1,16 +1,53 @@
-# React + Vite
+# MyWatchStats
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Turn your Letterboxd or IMDb export into a visual breakdown of your watch habits. Upload a CSV, get charts. No account, no server, nothing leaves your browser.
 
-Currently, two official plugins are available:
+## What it shows
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Films watched** - total count, estimated hours, average rating, years active
+- **Watch timeline** - monthly activity as an area chart
+- **Ratings breakdown** - bar chart of how you distribute your scores
+- **Films by decade** - pie chart of release decades
+- **Top genres** - horizontal bar chart (IMDb only)
+- **Top directors** - horizontal bar chart (IMDb only)
 
-## React Compiler
+## How to use it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Export your data from Letterboxd or IMDb (see below)
+2. Go to the app and drop the CSV onto the upload area
+3. Click **Parse CSV**
+4. Your stats appear instantly
 
-## Expanding the ESLint configuration
+### Exporting from Letterboxd
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Go to [letterboxd.com/settings/data](https://letterboxd.com/settings/data)
+2. Click **Export your data**
+3. Unzip the download and use either `ratings.csv` or `diary.csv`
+
+### Exporting from IMDb
+
+1. Go to your IMDb ratings page
+2. Click the three-dot menu and choose **Export**
+3. Use the downloaded CSV directly
+
+## Privacy
+
+All processing happens locally in your browser. Your CSV data is never uploaded anywhere.
+
+## Running locally
+
+Requires Node.js (any recent LTS).
+
+```bash
+npm install
+npm run dev
+```
+
+Then open [http://localhost:5173](http://localhost:5173).
+
+## Tech
+
+- [Vite](https://vitejs.dev/) + React
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [Recharts](https://recharts.org/)
+- [PapaParse](https://www.papaparse.com/)
