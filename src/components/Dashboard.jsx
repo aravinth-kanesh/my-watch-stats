@@ -1,19 +1,23 @@
+import StatCard          from './StatCard';
+import RatingDistribution from './RatingDistribution';
+import TimelineChart      from './TimelineChart';
+import GenreChart         from './GenreChart';
+import TopDirectorsChart  from './TopDirectorsChart';
+import DecadePieChart     from './DecadePieChart';
+
 export default function Dashboard({ stats, source, onReset }) {
   const { basic, genres, ratings, timeline, directors, decades } = stats;
-  const isLetterboxd = source === 'letterboxd';
 
   return (
-    <div className="min-h-screen px-4 py-10 max-w-3xl mx-auto">
+    <div className="min-h-screen px-4 py-10 max-w-5xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
             My<span className="text-orange-400">Watch</span>Stats
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Source: <span className="text-gray-400 capitalize">{source}</span>
-          </p>
+          <p className="text-gray-500 text-sm mt-1 capitalize">{source}</p>
         </div>
         <button
           onClick={onReset}
@@ -23,194 +27,74 @@ export default function Dashboard({ stats, source, onReset }) {
         </button>
       </div>
 
-      {/* Basic stats */}
-      <Section title="Overview">
-        <StatRow label="Total films"     value={basic.total} />
-        <StatRow label="Estimated hours" value={`${basic.estimatedHours.toLocaleString()} hrs`} />
-        {basic.ratedCount < basic.total && (
-          <StatRow label="Films rated" value={`${basic.ratedCount} / ${basic.total}`} />
-        )}
-        <StatRow label="Average rating" value={basic.avgRating ?? 'n/a'} />
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Films watched" value={basic.total.toLocaleString()} />
+        <StatCard label="Est. hours"    value={basic.estimatedHours.toLocaleString()} />
+        <StatCard label="Avg rating"    value={basic.avgRating ?? 'n/a'} />
         {basic.firstWatch && (
-          <StatRow
-            label="Date range"
-            value={`${formatFullDate(basic.firstWatch)} - ${formatFullDate(basic.lastWatch)}`}
+          <StatCard
+            label="Watching since"
+            value={basic.firstWatch.slice(0, 4)}
+            sub={`to ${basic.lastWatch.slice(0, 4)}`}
           />
         )}
-      </Section>
+      </div>
 
-      {/* Rating distribution */}
-      {ratings.length > 0 && (
-        <Section title="Ratings breakdown">
-          {ratings.map((r) => (
-            <div key={r.stars} className="flex items-center gap-3 py-1.5">
-              <span className="text-orange-400 w-28 text-sm flex-shrink-0 tracking-tight">
-                {isLetterboxd ? toStars(r.stars) : `${r.stars} stars`}
-              </span>
-              <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-2 rounded-full bg-orange-400"
-                  style={{ width: `${r.percentage}%` }}
-                />
-              </div>
-              <span className="text-gray-500 text-sm w-20 text-right flex-shrink-0">
-                {r.count} ({r.percentage}%)
-              </span>
-            </div>
-          ))}
-        </Section>
-      )}
+      {/* Charts */}
+      <div className="flex flex-col gap-6">
 
-      {/* Watch timeline */}
-      {timeline.length > 0 && (
-        <Section title="Watch timeline">
-          {fillGaps(timeline).map((t) =>
-            t.isGap ? (
-              <div
-                key={`gap-${t.start}`}
-                className="flex justify-between items-center py-2.5 border-b border-gray-800 last:border-0"
-              >
-                <span className="text-gray-500 text-sm">
-                  {t.start === t.end
-                    ? formatMonth(t.start)
-                    : `${formatMonth(t.start)} - ${formatMonth(t.end)}`}
-                </span>
-                <span className="text-gray-500 text-sm">0 films</span>
-              </div>
-            ) : (
-              <StatRow
-                key={t.month}
-                label={formatMonth(t.month)}
-                value={`${t.count} film${t.count !== 1 ? 's' : ''}`}
-              />
-            )
+        {/* Timeline — full width */}
+        {timeline.length > 0 && (
+          <ChartCard title="Watch timeline">
+            <TimelineChart data={timeline} />
+          </ChartCard>
+        )}
+
+        {/* Ratings + Decades side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {ratings.length > 0 && (
+            <ChartCard
+              title="Ratings breakdown"
+              sub={basic.avgRating ? `avg ${basic.avgRating}` : null}
+            >
+              <RatingDistribution data={ratings} source={source} />
+            </ChartCard>
           )}
-        </Section>
-      )}
+          {decades.length > 0 && (
+            <ChartCard title="Films by decade">
+              <DecadePieChart data={decades} />
+            </ChartCard>
+          )}
+        </div>
 
-      {/* Decade breakdown */}
-      {decades.length > 0 && (
-        <Section title="Films by decade">
-          {decades.map((d) => (
-            <div key={d.decade} className="flex items-center gap-3 py-1.5">
-              <span className="text-gray-400 w-16 text-sm flex-shrink-0">{d.label}</span>
-              <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-2 rounded-full bg-orange-400/70"
-                  style={{ width: `${d.percentage}%` }}
-                />
-              </div>
-              <span className="text-gray-500 text-sm w-20 text-right flex-shrink-0">
-                {d.count} ({d.percentage}%)
-              </span>
-            </div>
-          ))}
-        </Section>
-      )}
+        {/* Genre — full width, IMDb only */}
+        {genres.length > 0 && (
+          <ChartCard title="Top genres">
+            <GenreChart data={genres} />
+          </ChartCard>
+        )}
 
-      {/* Genre distribution */}
-      {genres.length > 0 && (
-        <Section title="Genres">
-          {genres.slice(0, 10).map((g) => (
-            <StatRow key={g.genre} label={g.genre} value={g.count} />
-          ))}
-        </Section>
-      )}
+        {/* Directors — full width, IMDb only */}
+        {directors.length > 0 && (
+          <ChartCard title="Top directors">
+            <TopDirectorsChart data={directors} />
+          </ChartCard>
+        )}
 
-      {/* Top directors */}
-      {directors.length > 0 && (
-        <Section title="Top directors">
-          {directors.map((d) => (
-            <StatRow
-              key={d.name}
-              label={d.name}
-              value={`${d.films} film${d.films !== 1 ? 's' : ''}${d.avgRating ? ` · avg ${d.avgRating}` : ''}`}
-            />
-          ))}
-        </Section>
-      )}
-
-    </div>
-  );
-}
-
-// Insert gap rows between timeline entries where months were skipped.
-function fillGaps(timeline) {
-  if (timeline.length < 2) return timeline;
-  const result = [];
-  for (let i = 0; i < timeline.length; i++) {
-    result.push(timeline[i]);
-    if (i < timeline.length - 1) {
-      const gap = monthsBetween(timeline[i].month, timeline[i + 1].month);
-      if (gap.length > 0) {
-        result.push({ isGap: true, start: gap[0], end: gap[gap.length - 1], count: 0 });
-      }
-    }
-  }
-  return result;
-}
-
-// All months strictly between two "YYYY-MM" strings (exclusive of both ends).
-function monthsBetween(start, end) {
-  const months = [];
-  let [y, m] = start.split('-').map(Number);
-  const [ey, em] = end.split('-').map(Number);
-  m++;
-  if (m > 12) { y++; m = 1; }
-  while (y < ey || (y === ey && m < em)) {
-    months.push(`${y}-${String(m).padStart(2, '0')}`);
-    m++;
-    if (m > 12) { y++; m = 1; }
-  }
-  return months;
-}
-
-// "2023-09-23" -> "September 23rd 2023"
-function formatFullDate(str) {
-  const [year, month, day] = str.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  const monthName = date.toLocaleString('en-GB', { month: 'long' });
-  return `${monthName} ${ordinal(day)} ${year}`;
-}
-
-// "2023-09" -> "September 2023"
-function formatMonth(str) {
-  const [year, month] = str.split('-').map(Number);
-  const date = new Date(year, month - 1);
-  return date.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
-}
-
-function ordinal(n) {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-// 3.5 -> "★★★½", 5 -> "★★★★★", 0.5 -> "½"
-function toStars(rating) {
-  const full = Math.floor(rating);
-  const half = (rating % 1) >= 0.5;
-  return '★'.repeat(full) + (half ? '½' : '');
-}
-
-function Section({ title, children }) {
-  return (
-    <div className="mb-8">
-      <h2 className="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3">
-        {title}
-      </h2>
-      <div className="bg-gray-900 rounded-2xl border border-gray-800 px-5 py-2">
-        {children}
       </div>
     </div>
   );
 }
 
-function StatRow({ label, value }) {
+function ChartCard({ title, sub, children }) {
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-gray-800 last:border-0">
-      <span className="text-gray-400 text-sm">{label}</span>
-      <span className="text-white text-sm font-medium">{value}</span>
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{title}</h2>
+        {sub && <span className="text-gray-600 text-xs">{sub}</span>}
+      </div>
+      {children}
     </div>
   );
 }
