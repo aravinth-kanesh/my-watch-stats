@@ -47,7 +47,7 @@ Then open [http://localhost:5173](http://localhost:5173).
 
 ## Tech
 
-- [Vite](https://vitejs.dev/) + React
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 - [Recharts](https://recharts.org/)
 - [PapaParse](https://www.papaparse.com/)
