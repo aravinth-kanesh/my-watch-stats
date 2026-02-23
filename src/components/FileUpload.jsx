@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { parseCSV } from '../utils/csvParser';
-import { normalizeData, computeStats } from '../utils/dataProcessor';
+import { normaliseData, computeStats } from '../utils/dataProcessor';
 
 export default function FileUpload({ onDataLoaded }) {
   const [dragging, setDragging] = useState(false);
@@ -41,12 +41,8 @@ export default function FileUpload({ onDataLoaded }) {
         return;
       }
 
-      const movies = normalizeData(result.data, result.source);
+      const movies = normaliseData(result.data, result.source);
       const stats = computeStats(movies);
-
-      console.log('Source:', result.source);
-      console.log('Movies:', movies);
-      console.log('Stats:', stats);
 
       onDataLoaded({ movies, stats, source: result.source });
     } catch (err) {

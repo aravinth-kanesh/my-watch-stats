@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { computeStats } from '../utils/dataProcessor';
+import { computeStats, getContentLabel } from '../utils/dataProcessor';
 import StatCard          from './StatCard';
 import RatingDistribution from './RatingDistribution';
 import TimelineChart      from './TimelineChart';
@@ -10,10 +10,11 @@ import Insights          from './Insights';
 import FilterBar         from './FilterBar';
 
 export default function Dashboard({ movies, source, onReset }) {
-  const [filters, setFilters] = useState({ fromYear: null, toYear: null, genre: null, minRating: null });
+  const [filters, setFilters] = useState({ fromYear: null, toYear: null, genre: null, minRating: null, titleType: null });
 
   const filteredMovies = useMemo(() => applyFilters(movies, filters), [movies, filters]);
   const stats = useMemo(() => computeStats(filteredMovies), [filteredMovies]);
+  const contentLabel = useMemo(() => getContentLabel(filteredMovies, source), [filteredMovies, source]);
   const { basic, genres, ratings, timeline, directors, decades } = stats;
 
   const [visible, setVisible] = useState(false);
@@ -31,7 +32,7 @@ export default function Dashboard({ movies, source, onReset }) {
           <h1 className="text-3xl font-bold text-white tracking-tight">
             My<span className="text-orange-400">Watch</span>Stats
           </h1>
-          <p className="text-gray-500 text-sm mt-1 capitalize">{source}</p>
+          <p className="text-gray-500 text-sm mt-1">{source === 'imdb' ? 'IMDb' : 'Letterboxd'}</p>
         </div>
         <button
           onClick={onReset}
@@ -53,8 +54,8 @@ export default function Dashboard({ movies, source, onReset }) {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Films watched" value={basic.total.toLocaleString()} />
-        <StatCard label="Est. hours"    value={basic.estimatedHours.toLocaleString()} />
+        <StatCard label={source === 'imdb' ? 'Titles rated' : 'Films watched'} value={basic.total.toLocaleString()} />
+        <StatCard label={source === 'imdb' ? 'Hours watched' : 'Est. hours'}   value={basic.estimatedHours.toLocaleString()} />
         <StatCard label="Avg rating"    value={basic.avgRating ?? 'n/a'} />
         {basic.firstWatch && (() => {
           const since = basic.firstWatch.slice(0, 4);
@@ -68,7 +69,7 @@ export default function Dashboard({ movies, source, onReset }) {
         })()}
       </div>
 
-      <Insights stats={stats} source={source} />
+      <Insights stats={stats} source={source} contentLabel={contentLabel} />
 
       {/* Charts */}
       <div className="flex flex-col gap-6">
@@ -76,7 +77,7 @@ export default function Dashboard({ movies, source, onReset }) {
         {/* Timeline — full width */}
         {timeline.length > 0 && (
           <ChartCard title="Watch timeline">
-            <TimelineChart data={timeline} />
+            <TimelineChart data={timeline} contentLabel={contentLabel} />
           </ChartCard>
         )}
 
@@ -87,12 +88,12 @@ export default function Dashboard({ movies, source, onReset }) {
               title="Ratings breakdown"
               sub={basic.avgRating ? `avg ${basic.avgRating}` : null}
             >
-              <RatingDistribution data={ratings} source={source} />
+              <RatingDistribution data={ratings} source={source} contentLabel={contentLabel} />
             </ChartCard>
           )}
           {decades.length > 0 && (
-            <ChartCard title="Films by decade">
-              <DecadePieChart data={decades} />
+            <ChartCard title={`${contentLabel.charAt(0).toUpperCase() + contentLabel.slice(1)} by decade`}>
+              <DecadePieChart data={decades} contentLabel={contentLabel} />
             </ChartCard>
           )}
         </div>
@@ -100,14 +101,14 @@ export default function Dashboard({ movies, source, onReset }) {
         {/* Genre — full width, IMDb only */}
         {genres.length > 0 && (
           <ChartCard title="Top genres">
-            <GenreChart data={genres} />
+            <GenreChart data={genres} contentLabel={contentLabel} />
           </ChartCard>
         )}
 
         {/* Directors — full width, IMDb only */}
         {directors.length > 0 && (
           <ChartCard title="Top directors">
-            <TopDirectorsChart data={directors} />
+            <TopDirectorsChart data={directors} contentLabel={contentLabel} />
           </ChartCard>
         )}
 
@@ -126,6 +127,7 @@ function applyFilters(movies, filters) {
       if (!m.watchedDate) return false;
       if (parseInt(m.watchedDate.slice(0, 4)) > filters.toYear) return false;
     }
+    if (filters.titleType !== null && m.titleType !== filters.titleType) return false;
     if (filters.genre !== null && !m.genres.includes(filters.genre)) return false;
     if (filters.minRating !== null && (m.rating === null || m.rating < filters.minRating)) return false;
     return true;

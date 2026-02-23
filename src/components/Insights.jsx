@@ -1,3 +1,5 @@
+import { toSingular } from '../utils/dataProcessor';
+
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -8,26 +10,26 @@ function formatMonth(yyyyMm) {
   return `${MONTHS[parseInt(m) - 1]} ${year}`;
 }
 
-export default function Insights({ stats, source }) {
+export default function Insights({ stats, source, contentLabel }) {
   const { basic, genres, timeline, directors, decades } = stats;
+  const n = contentLabel ?? 'titles';
   const lines = [];
 
   if (basic.estimatedHours > 0) {
-    lines.push(`You've watched an estimated ${basic.estimatedHours.toLocaleString()} hours of film.`);
+    const medium = n === 'films' ? 'film' : n === 'episodes' ? 'TV' : 'content';
+    lines.push(`You've watched an estimated ${basic.estimatedHours.toLocaleString()} hours of ${medium}.`);
   }
 
   if (basic.firstWatch) {
     const since = basic.firstWatch.slice(0, 4);
     const until = basic.lastWatch.slice(0, 4);
-    const rangeText = since === until
-      ? `in ${since}`
-      : `from ${since} to ${until}`;
-    lines.push(`You logged ${basic.total.toLocaleString()} films ${rangeText}.`);
+    const rangeText = since === until ? `in ${since}` : `from ${since} to ${until}`;
+    lines.push(`You logged ${basic.total.toLocaleString()} ${basic.total === 1 ? toSingular(n) : n} ${rangeText}.`);
   }
 
   if (timeline.length > 0) {
     const peak = [...timeline].sort((a, b) => b.count - a.count)[0];
-    lines.push(`Your busiest month was ${formatMonth(peak.month)} with ${peak.count} films.`);
+    lines.push(`Your busiest month was ${formatMonth(peak.month)} with ${peak.count} ${peak.count === 1 ? toSingular(n) : n}.`);
   }
 
   if (basic.avgRating !== null) {
@@ -37,16 +39,16 @@ export default function Insights({ stats, source }) {
   }
 
   if (genres.length > 0) {
-    lines.push(`Your most-watched genre is ${genres[0].genre} with ${genres[0].count} films.`);
+    lines.push(`Your most-watched genre is ${genres[0].genre} with ${genres[0].count} ${genres[0].count === 1 ? toSingular(n) : n}.`);
   }
 
   if (decades.length > 0) {
     const top = [...decades].sort((a, b) => b.count - a.count)[0];
-    lines.push(`Most of your films are from the ${top.label}.`);
+    lines.push(`Most of your ${n} are from the ${top.label}.`);
   }
 
   if (directors.length > 0) {
-    lines.push(`You've watched the most films directed by ${directors[0].name} (${directors[0].films} films).`);
+    lines.push(`You've rated the most ${n} directed by ${directors[0].name} (${directors[0].films} ${directors[0].films === 1 ? toSingular(n) : n}).`);
   }
 
   if (lines.length === 0) return null;

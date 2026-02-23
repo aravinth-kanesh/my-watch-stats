@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { toSingular } from '../utils/dataProcessor';
 
 // Full star glyphs for tooltips.
 function toStars(rating) {
@@ -15,20 +16,21 @@ function toCompactLabel(rating) {
   return half ? `${full}½` : String(full);
 }
 
-function ChartTooltip({ active, payload, source }) {
+function ChartTooltip({ active, payload, source, contentLabel }) {
   if (!active || !payload?.length) return null;
   const { stars, count, percentage } = payload[0].payload;
+  const n = contentLabel ?? 'titles';
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
       <p className="text-amber-400 font-medium">
         {source === 'letterboxd' ? toStars(stars) : `${stars} stars`}
       </p>
-      <p className="text-gray-400">{count} films ({percentage}%)</p>
+      <p className="text-gray-400">{count} {count === 1 ? toSingular(n) : n} ({percentage}%)</p>
     </div>
   );
 }
 
-export default function RatingDistribution({ data, source }) {
+export default function RatingDistribution({ data, source, contentLabel }) {
   if (!data?.length) return null;
 
   const isLetterboxd = source === 'letterboxd';
@@ -52,7 +54,7 @@ export default function RatingDistribution({ data, source }) {
         />
         <YAxis hide />
         <Tooltip
-          content={(props) => <ChartTooltip {...props} source={source} />}
+          content={(props) => <ChartTooltip {...props} source={source} contentLabel={contentLabel} />}
           cursor={{ fill: 'rgba(255,255,255,0.04)' }}
         />
         <Bar dataKey="percentage" fill="url(#ratingGrad)" radius={[4, 4, 0, 0]} />

@@ -9,20 +9,25 @@ export default function FilterBar({ movies, filters, onChange, source, filteredC
     ? [...new Set(movies.flatMap(m => m.genres))].filter(Boolean).sort()
     : [];
 
+  const allTitleTypes = source === 'imdb'
+    ? [...new Set(movies.map(m => m.titleType))].filter(Boolean).sort()
+    : [];
+
   const ratingSteps = source === 'letterboxd'
     ? [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const hasFilters = filters.fromYear !== null || filters.toYear !== null ||
-                     filters.genre !== null || filters.minRating !== null;
+                     filters.genre !== null || filters.minRating !== null ||
+                     filters.titleType !== null;
 
   function update(key, raw) {
-    const value = raw === '' ? null : key === 'genre' ? raw : parseFloat(raw);
+    const value = raw === '' ? null : (key === 'genre' || key === 'titleType') ? raw : parseFloat(raw);
     onChange({ ...filters, [key]: value });
   }
 
   function clear() {
-    onChange({ fromYear: null, toYear: null, genre: null, minRating: null });
+    onChange({ fromYear: null, toYear: null, genre: null, minRating: null, titleType: null });
   }
 
   return (
@@ -46,6 +51,16 @@ export default function FilterBar({ movies, filters, onChange, source, filteredC
           <option key={y} value={y} disabled={filters.fromYear !== null && y < filters.fromYear}>{y}</option>
         ))}
       </Sel>
+
+      {allTitleTypes.length > 0 && (
+        <Sel
+          value={filters.titleType ?? ''}
+          onChange={e => update('titleType', e.target.value)}
+        >
+          <option value="">All types</option>
+          {allTitleTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </Sel>
+      )}
 
       {allGenres.length > 0 && (
         <Sel
@@ -79,7 +94,7 @@ export default function FilterBar({ movies, filters, onChange, source, filteredC
             Clear
           </button>
           <span className="ml-auto text-xs text-gray-500">
-            {filteredCount.toLocaleString()} of {totalCount.toLocaleString()} films
+            {filteredCount.toLocaleString()} of {totalCount.toLocaleString()} titles
           </span>
         </>
       )}

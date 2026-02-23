@@ -1,19 +1,21 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { toSingular } from '../utils/dataProcessor';
 
-function ChartTooltip({ active, payload }) {
+function ChartTooltip({ active, payload, contentLabel }) {
   if (!active || !payload?.length) return null;
   const { name, films, avgRating } = payload[0].payload;
+  const n = contentLabel ?? 'titles';
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
       <p className="text-white font-medium">{name}</p>
       <p className="text-gray-400">
-        {films} film{films !== 1 ? 's' : ''}{avgRating ? ` · avg ${avgRating}` : ''}
+        {films} {films !== 1 ? n : toSingular(n)}{avgRating ? ` · avg ${avgRating}` : ''}
       </p>
     </div>
   );
 }
 
-export default function TopDirectorsChart({ data }) {
+export default function TopDirectorsChart({ data, contentLabel }) {
   if (!data?.length) return null;
 
   return (
@@ -34,7 +36,7 @@ export default function TopDirectorsChart({ data }) {
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+        <Tooltip content={(props) => <ChartTooltip {...props} contentLabel={contentLabel} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
         <Bar
           dataKey="films"
           fill="url(#directorGrad)"

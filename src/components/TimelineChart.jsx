@@ -1,4 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { toSingular } from '../utils/dataProcessor';
 
 // Fill every month between first and last entry, zeroing months with no watches.
 function expandTimeline(data) {
@@ -22,20 +23,21 @@ function tickLabel(str) {
   return d.toLocaleString('en-GB', { month: 'short' }) + " '" + String(y).slice(2);
 }
 
-function ChartTooltip({ active, payload }) {
+function ChartTooltip({ active, payload, contentLabel }) {
   if (!active || !payload?.length) return null;
   const { month, count } = payload[0].payload;
   const [y, mo] = month.split('-').map(Number);
   const label = new Date(y, mo - 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+  const n = contentLabel ?? 'titles';
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
       <p className="text-white font-medium">{label}</p>
-      <p className="text-gray-400">{count} {count === 1 ? 'film' : 'films'}</p>
+      <p className="text-gray-400">{count} {count === 1 ? toSingular(n) : n}</p>
     </div>
   );
 }
 
-export default function TimelineChart({ data }) {
+export default function TimelineChart({ data, contentLabel }) {
   if (!data?.length) {
     return <p className="text-gray-600 text-sm text-center py-8">No watch dates in this export.</p>;
   }
@@ -61,7 +63,7 @@ export default function TimelineChart({ data }) {
           tickLine={false}
         />
         <YAxis hide />
-        <Tooltip content={<ChartTooltip />} cursor={false} />
+        <Tooltip content={(props) => <ChartTooltip {...props} contentLabel={contentLabel} />} cursor={false} />
         <Area
           type="monotone"
           dataKey="count"

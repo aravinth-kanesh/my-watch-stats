@@ -1,19 +1,21 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { toSingular } from '../utils/dataProcessor';
 
 const COLORS = ['#818cf8', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#c084fc', '#fb923c', '#2dd4bf'];
 
-function ChartTooltip({ active, payload }) {
+function ChartTooltip({ active, payload, contentLabel }) {
   if (!active || !payload?.length) return null;
   const { label, count, percentage } = payload[0].payload;
+  const n = contentLabel ?? 'titles';
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
       <p className="text-white font-medium">{label}</p>
-      <p className="text-gray-400">{count} films ({percentage}%)</p>
+      <p className="text-gray-400">{count} {count === 1 ? toSingular(n) : n} ({percentage}%)</p>
     </div>
   );
 }
 
-export default function DecadePieChart({ data }) {
+export default function DecadePieChart({ data, contentLabel }) {
   if (!data?.length) return null;
 
   return (
@@ -33,7 +35,7 @@ export default function DecadePieChart({ data }) {
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip content={<ChartTooltip />} />
+          <Tooltip content={(props) => <ChartTooltip {...props} contentLabel={contentLabel} />} />
         </PieChart>
       </ResponsiveContainer>
 

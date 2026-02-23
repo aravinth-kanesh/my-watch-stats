@@ -1,17 +1,19 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { toSingular } from '../utils/dataProcessor';
 
-function ChartTooltip({ active, payload }) {
+function ChartTooltip({ active, payload, contentLabel }) {
   if (!active || !payload?.length) return null;
   const { genre, count } = payload[0].payload;
+  const n = contentLabel ?? 'titles';
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
       <p className="text-white font-medium">{genre}</p>
-      <p className="text-gray-400">{count} films</p>
+      <p className="text-gray-400">{count} {count === 1 ? toSingular(n) : n}</p>
     </div>
   );
 }
 
-export default function GenreChart({ data }) {
+export default function GenreChart({ data, contentLabel }) {
   if (!data?.length) return null;
 
   const top10 = data.slice(0, 10);
@@ -34,7 +36,7 @@ export default function GenreChart({ data }) {
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+        <Tooltip content={(props) => <ChartTooltip {...props} contentLabel={contentLabel} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
         <Bar
           dataKey="count"
           fill="url(#genreGrad)"

@@ -1,11 +1,11 @@
 // Map raw CSV rows to a common shape regardless of which service they came from.
-export function normalizeData(rows, source) {
-  if (source === 'letterboxd') return normalizeLetterboxd(rows);
-  if (source === 'imdb') return normalizeIMDb(rows);
+export function normaliseData(rows, source) {
+  if (source === 'letterboxd') return normaliseLetterboxd(rows);
+  if (source === 'imdb') return normaliseIMDb(rows);
   return [];
 }
 
-function normalizeLetterboxd(rows) {
+function normaliseLetterboxd(rows) {
   return rows
     .filter((r) => r['Name'] || r['Title'])
     .map((r) => ({
@@ -20,7 +20,7 @@ function normalizeLetterboxd(rows) {
     }));
 }
 
-function normalizeIMDb(rows) {
+function normaliseIMDb(rows) {
   return rows
     .filter((r) => r['Title'] || r['Primary Title'])
     .map((r) => {
@@ -35,6 +35,8 @@ function normalizeIMDb(rows) {
         rewatch:     false,
         genres,
         director:    r['Directors'] || null,
+        titleType:   r['Title Type'] || null,
+        runtime:     r['Runtime (mins)'] ? parseInt(r['Runtime (mins)']) : null,
         source:      'imdb',
       };
     });
@@ -43,7 +45,8 @@ function normalizeIMDb(rows) {
 // Total count, estimated hours, average rating, and date range.
 export function calculateBasicStats(movies) {
   const total = movies.length;
-  const estimatedHours = total * 2;
+  const totalMinutes = movies.reduce((sum, m) => sum + (m.runtime ?? 120), 0);
+  const estimatedHours = Math.round(totalMinutes / 60);
 
   const rated = movies.filter((m) => m.rating !== null);
   const avgRating =
@@ -163,6 +166,26 @@ export function getDecadeBreakdown(movies) {
       percentage: Math.round((count / withYear.length) * 100),
     }))
     .sort((a, b) => a.decade - b.decade);
+}
+
+// Return the singular form of a content label.
+export function toSingular(label) {
+  if (label === 'series') return 'series'; // unchanged
+  return label.replace(/s$/, '');          // films->film, episodes->episode, titles->title, shorts->short
+}
+
+// Derive a human-readable content label from the types present in the filtered set.
+// Letterboxd is always films. For IMDb, sniff the unique title types and pick the right word.
+export function getContentLabel(movies, source) {
+  if (source === 'letterboxd') return 'films';
+  const types = [...new Set(movies.map(m => m.titleType).filter(Boolean))];
+  if (types.length !== 1) return 'titles';
+  const t = types[0].toLowerCase().replace(/\s+/g, '');
+  if (t === 'movie' || t === 'tvmovie') return 'films';
+  if (t === 'tvepisode') return 'episodes';
+  if (t === 'tvseries' || t === 'tvminiseries') return 'series';
+  if (t === 'short') return 'shorts';
+  return 'titles';
 }
 
 // Convenience wrapper — returns everything the Dashboard needs in one call.
