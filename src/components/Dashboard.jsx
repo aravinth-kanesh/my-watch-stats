@@ -1,15 +1,23 @@
+import { useState, useEffect } from 'react';
 import StatCard          from './StatCard';
 import RatingDistribution from './RatingDistribution';
 import TimelineChart      from './TimelineChart';
 import GenreChart         from './GenreChart';
 import TopDirectorsChart  from './TopDirectorsChart';
 import DecadePieChart     from './DecadePieChart';
+import Insights          from './Insights';
 
 export default function Dashboard({ stats, source, onReset }) {
   const { basic, genres, ratings, timeline, directors, decades } = stats;
 
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
-    <div className="min-h-screen px-4 py-10 max-w-5xl mx-auto">
+    <div className={`min-h-screen px-4 py-10 max-w-5xl mx-auto transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -40,6 +48,8 @@ export default function Dashboard({ stats, source, onReset }) {
           />
         )}
       </div>
+
+      <Insights stats={stats} source={source} />
 
       {/* Charts */}
       <div className="flex flex-col gap-6">
