@@ -9,7 +9,7 @@ export default function App() {
     <div className="dark">
       {watchData ? (
         <Dashboard
-          stats={watchData.stats}
+          movies={watchData.movies}
           source={watchData.source}
           onReset={() => setWatchData(null)}
         />

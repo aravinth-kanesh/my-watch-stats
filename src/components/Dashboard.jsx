@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { computeStats } from '../utils/dataProcessor';
 import StatCard          from './StatCard';
 import RatingDistribution from './RatingDistribution';
 import TimelineChart      from './TimelineChart';
@@ -6,8 +7,13 @@ import GenreChart         from './GenreChart';
 import TopDirectorsChart  from './TopDirectorsChart';
 import DecadePieChart     from './DecadePieChart';
 import Insights          from './Insights';
+import FilterBar         from './FilterBar';
 
-export default function Dashboard({ stats, source, onReset }) {
+export default function Dashboard({ movies, source, onReset }) {
+  const [filters, setFilters] = useState({ fromYear: null, toYear: null, genre: null, minRating: null });
+
+  const filteredMovies = useMemo(() => applyFilters(movies, filters), [movies, filters]);
+  const stats = useMemo(() => computeStats(filteredMovies), [filteredMovies]);
   const { basic, genres, ratings, timeline, directors, decades } = stats;
 
   const [visible, setVisible] = useState(false);
@@ -29,24 +35,37 @@ export default function Dashboard({ stats, source, onReset }) {
         </div>
         <button
           onClick={onReset}
-          className="text-sm text-gray-500 hover:text-gray-300 transition-colors border border-gray-700 rounded-lg px-3 py-1.5"
+          className="text-sm text-gray-500 hover:text-orange-400 hover:border-orange-400 transition-colors border border-gray-700 rounded-lg px-3 py-1.5"
         >
           Load another file
         </button>
       </div>
+
+      {/* Filters */}
+      <FilterBar
+        movies={movies}
+        filters={filters}
+        onChange={setFilters}
+        source={source}
+        filteredCount={filteredMovies.length}
+        totalCount={movies.length}
+      />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <StatCard label="Films watched" value={basic.total.toLocaleString()} />
         <StatCard label="Est. hours"    value={basic.estimatedHours.toLocaleString()} />
         <StatCard label="Avg rating"    value={basic.avgRating ?? 'n/a'} />
-        {basic.firstWatch && (
-          <StatCard
-            label="Watching since"
-            value={basic.firstWatch.slice(0, 4)}
-            sub={`to ${basic.lastWatch.slice(0, 4)}`}
-          />
-        )}
+        {basic.firstWatch && (() => {
+          const since = basic.firstWatch.slice(0, 4);
+          const until = basic.lastWatch.slice(0, 4);
+          return (
+            <StatCard
+              label="Years active"
+              value={since !== until ? `${since} - ${until}` : since}
+            />
+          );
+        })()}
       </div>
 
       <Insights stats={stats} source={source} />
@@ -95,6 +114,22 @@ export default function Dashboard({ stats, source, onReset }) {
       </div>
     </div>
   );
+}
+
+function applyFilters(movies, filters) {
+  return movies.filter(m => {
+    if (filters.fromYear !== null) {
+      if (!m.watchedDate) return false;
+      if (parseInt(m.watchedDate.slice(0, 4)) < filters.fromYear) return false;
+    }
+    if (filters.toYear !== null) {
+      if (!m.watchedDate) return false;
+      if (parseInt(m.watchedDate.slice(0, 4)) > filters.toYear) return false;
+    }
+    if (filters.genre !== null && !m.genres.includes(filters.genre)) return false;
+    if (filters.minRating !== null && (m.rating === null || m.rating < filters.minRating)) return false;
+    return true;
+  });
 }
 
 function ChartCard({ title, sub, children }) {

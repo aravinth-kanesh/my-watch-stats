@@ -19,8 +19,10 @@ export default function Insights({ stats, source }) {
   if (basic.firstWatch) {
     const since = basic.firstWatch.slice(0, 4);
     const until = basic.lastWatch.slice(0, 4);
-    const range = since === until ? since : `${since} to ${until}`;
-    lines.push(`You logged ${basic.total.toLocaleString()} films from ${range}.`);
+    const rangeText = since === until
+      ? `in ${since}`
+      : `from ${since} to ${until}`;
+    lines.push(`You logged ${basic.total.toLocaleString()} films ${rangeText}.`);
   }
 
   if (timeline.length > 0) {
