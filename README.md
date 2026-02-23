@@ -26,8 +26,8 @@ Turn your Letterboxd or IMDb export into a visual breakdown of your watch habits
 
 ### Exporting from IMDb
 
-1. Go to your IMDb ratings page
-2. Click the three-dot menu and choose **Export**
+1. Go to 'Your ratings' from the user menu
+2. Click **Export**
 3. Use the downloaded CSV directly
 
 ## Privacy
